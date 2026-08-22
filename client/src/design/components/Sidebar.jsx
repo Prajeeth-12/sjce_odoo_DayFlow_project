@@ -2,12 +2,11 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText,
-  Typography, Avatar, Divider, IconButton, Tooltip, Badge
+  Typography, Avatar, Divider, IconButton, Tooltip
 } from '@mui/material';
 import {
   PeopleOutlined, AccessTimeOutlined, EventAvailableOutlined,
-  PaymentsOutlined, SettingsOutlined, ChevronLeft, Menu,
-  LogoutOutlined
+  SettingsOutlined, ChevronLeft, Menu, LogoutOutlined, PersonOutlined
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { colors } from '../tokens';
@@ -16,10 +15,11 @@ const SIDEBAR_WIDTH = 260;
 const SIDEBAR_COLLAPSED = 72;
 
 const navItems = [
-  { label: 'Employees', icon: PeopleOutlined, path: '/dashboard', group: 'main' },
-  { label: 'Attendance', icon: AccessTimeOutlined, path: '/attendance', group: 'time' },
-  { label: 'Time Off', icon: EventAvailableOutlined, path: '/timeoff', group: 'time' },
-  { label: 'Settings', icon: SettingsOutlined, path: '/settings', group: 'admin', adminOnly: true },
+  { label: 'Employees', icon: PeopleOutlined, path: '/dashboard' },
+  { label: 'Attendance', icon: AccessTimeOutlined, path: '/attendance' },
+  { label: 'Time Off', icon: EventAvailableOutlined, path: '/timeoff' },
+  { label: 'My Profile', icon: PersonOutlined, path: '/profile' },
+  { label: 'Settings', icon: SettingsOutlined, path: '/settings', adminOnly: true },
 ];
 
 export default function Sidebar() {
@@ -51,7 +51,11 @@ export default function Sidebar() {
     >
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 64 }}>
         {!collapsed && (
-          <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main', whiteSpace: 'nowrap' }}>
+          <Typography
+            variant="h6"
+            onClick={() => navigate('/dashboard')}
+            sx={{ fontWeight: 700, color: 'primary.main', whiteSpace: 'nowrap', cursor: 'pointer' }}
+          >
             Dayflow
           </Typography>
         )}
@@ -66,7 +70,8 @@ export default function Sidebar() {
         {navItems
           .filter(item => !item.adminOnly || isAdmin)
           .map((item) => {
-            const active = location.pathname.startsWith(item.path);
+            const active = location.pathname === item.path ||
+              (item.path === '/dashboard' && location.pathname.startsWith('/employees'));
             return (
               <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
                 <Tooltip title={collapsed ? item.label : ''} placement="right">
@@ -75,7 +80,7 @@ export default function Sidebar() {
                     sx={{
                       borderRadius: 2,
                       minHeight: 44,
-                      px: collapsed ? 2 : 2,
+                      px: 2,
                       justifyContent: collapsed ? 'center' : 'flex-start',
                       bgcolor: active ? 'rgba(113, 75, 103, 0.08)' : 'transparent',
                       borderLeft: active ? `3px solid ${colors.brand[500]}` : '3px solid transparent',
@@ -106,7 +111,10 @@ export default function Sidebar() {
 
       <Divider />
 
-      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      <Box
+        sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}
+        onClick={() => navigate('/profile')}
+      >
         <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontSize: '0.8rem' }}>
           {employee?.first_name?.[0]}{employee?.last_name?.[0]}
         </Avatar>
@@ -122,7 +130,7 @@ export default function Sidebar() {
         )}
         {!collapsed && (
           <Tooltip title="Logout">
-            <IconButton size="small" onClick={() => { logout(); navigate('/signin'); }}>
+            <IconButton size="small" onClick={(e) => { e.stopPropagation(); logout(); navigate('/signin'); }}>
               <LogoutOutlined fontSize="small" />
             </IconButton>
           </Tooltip>

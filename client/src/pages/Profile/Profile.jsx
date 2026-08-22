@@ -1,20 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  Box, Paper, Avatar, Typography, Tabs, Tab, Grid, TextField, Button, Chip
+  Box, Paper, Avatar, Typography, Tabs, Tab, Grid, TextField, Button, Chip, IconButton
 } from '@mui/material';
-import { Edit } from '@mui/icons-material';
+import { Edit, CameraAlt } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 
-function ResumeTab({ data, editable, onSave }) {
+function ResumeTab({ data, editable, onSave, onRefresh }) {
   const [form, setForm] = useState({ about: data.about || '', job_love: data.job_love || '', hobbies: data.hobbies || '' });
   const [skills, setSkills] = useState(data.skills || []);
   const [newSkill, setNewSkill] = useState('');
+  const [newCert, setNewCert] = useState({ name: '', issuer: '' });
 
-  async function handleSave() {
-    await onSave(form);
-  }
+  async function handleSave() { await onSave(form); }
 
   async function addSkill() {
     if (!newSkill.trim()) return;
@@ -22,6 +21,15 @@ function ResumeTab({ data, editable, onSave }) {
       await api.post(`/employees/${data.id}/skills`, { skill_name: newSkill });
       setSkills([...skills, { skill_name: newSkill }]);
       setNewSkill('');
+    } catch {}
+  }
+
+  async function addCertification() {
+    if (!newCert.name.trim()) return;
+    try {
+      await api.post(`/employees/${data.id}/certifications`, newCert);
+      setNewCert({ name: '', issuer: '' });
+      onRefresh();
     } catch {}
   }
 
@@ -43,19 +51,26 @@ function ResumeTab({ data, editable, onSave }) {
         <Grid size={{ xs: 12, md: 6 }}>
           <Typography variant="subtitle2" gutterBottom>Skills</Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-            {skills.map((s, i) => <Chip key={i} label={s.skill_name} />)}
+            {skills.map((s, i) => <Chip key={i} label={s.skill_name} size="small" />)}
           </Box>
           {editable && (
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
               <TextField size="small" value={newSkill} onChange={e => setNewSkill(e.target.value)} placeholder="Add skill" />
               <Button variant="outlined" size="small" onClick={addSkill}>+ Add</Button>
             </Box>
           )}
 
-          <Typography variant="subtitle2" gutterBottom sx={{ mt: 3 }}>Certifications</Typography>
+          <Typography variant="subtitle2" gutterBottom>Certifications</Typography>
           {(data.certifications || []).map((c, i) => (
-            <Typography key={i} variant="body2">{c.name} - {c.issuer}</Typography>
+            <Typography key={i} variant="body2" sx={{ mb: 0.5 }}>{c.name}{c.issuer ? ` — ${c.issuer}` : ''}</Typography>
           ))}
+          {editable && (
+            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+              <TextField size="small" value={newCert.name} onChange={e => setNewCert({ ...newCert, name: e.target.value })} placeholder="Certification name" />
+              <TextField size="small" value={newCert.issuer} onChange={e => setNewCert({ ...newCert, issuer: e.target.value })} placeholder="Issuer" />
+              <Button variant="outlined" size="small" onClick={addCertification}>+ Add</Button>
+            </Box>
+          )}
         </Grid>
       </Grid>
     </Box>
@@ -109,7 +124,7 @@ function SalaryInfoTab({ employeeId }) {
     api.get(`/payroll/${employeeId}`).then(({ data }) => setSalary(data)).catch(() => {});
   }, [employeeId]);
 
-  if (!salary) return <Typography>No salary data</Typography>;
+  if (!salary) return <Typography color="text.secondary">No salary data configured</Typography>;
 
   return (
     <Box>
@@ -134,9 +149,7 @@ function SalaryInfoTab({ employeeId }) {
 
       <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>Salary Components</Typography>
       <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', '& td, & th': { p: 1, borderBottom: '1px solid #eee', textAlign: 'left' } }}>
-        <thead>
-          <tr><th>Component</th><th>Amount (₹/month)</th><th>%</th></tr>
-        </thead>
+        <thead><tr><th>Component</th><th>Amount (₹/month)</th><th>%</th></tr></thead>
         <tbody>
           <tr><td>Basic Salary</td><td>₹{salary.components.basic_salary.toLocaleString()}</td><td>{salary.percentages.basic_salary_pct}%</td></tr>
           <tr><td>House Rent Allowance</td><td>₹{salary.components.hra.toLocaleString()}</td><td>{salary.percentages.hra_pct}% of Basic</td></tr>
@@ -163,16 +176,12 @@ function SecurityTab() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (form.newPassword !== form.confirmPassword) {
-      return setMessage('Passwords do not match');
-    }
+    if (form.newPassword !== form.confirmPassword) return setMessage('Passwords do not match');
     try {
       await api.post('/auth/change-password', { currentPassword: form.currentPassword, newPassword: form.newPassword });
       setMessage('Password changed successfully');
       setForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    } catch (err) {
-      setMessage(err.response?.data?.error || 'Failed');
-    }
+    } catch (err) { setMessage(err.response?.data?.error || 'Failed'); }
   }
 
   return (
@@ -181,9 +190,9 @@ function SecurityTab() {
         <TextField fullWidth label="Current Password" type="password" value={form.currentPassword} onChange={e => setForm({ ...form, currentPassword: e.target.value })} margin="dense" required />
         <TextField fullWidth label="New Password" type="password" value={form.newPassword} onChange={e => setForm({ ...form, newPassword: e.target.value })} margin="dense" required />
         <TextField fullWidth label="Confirm New Password" type="password" value={form.confirmPassword} onChange={e => setForm({ ...form, confirmPassword: e.target.value })} margin="dense" required />
-        <Button type="submit" variant="contained" sx={{ mt: 2, bgcolor: '#714B67' }}>Change Password</Button>
+        <Button type="submit" variant="contained" sx={{ mt: 2 }}>Change Password</Button>
       </form>
-      {message && <Typography color="primary" sx={{ mt: 1 }}>{message}</Typography>}
+      {message && <Typography sx={{ mt: 1, color: message.includes('success') ? 'success.main' : 'error.main' }}>{message}</Typography>}
     </Box>
   );
 }
@@ -197,20 +206,23 @@ export default function Profile() {
   const isOwnProfile = !id || (currentEmployee && parseInt(id) === currentEmployee.id);
   const targetId = id || currentEmployee?.id;
 
-  useEffect(() => {
-    if (targetId) fetchProfile();
-  }, [targetId]);
+  useEffect(() => { if (targetId) fetchProfile(); }, [targetId]);
 
   async function fetchProfile() {
-    try {
-      const { data } = await api.get(`/employees/${targetId}`);
-      setData(data);
-    } catch {}
+    try { const { data } = await api.get(`/employees/${targetId}`); setData(data); } catch {}
   }
 
   async function handleSave(updates) {
+    try { await api.put(`/employees/${targetId}`, updates); fetchProfile(); } catch {}
+  }
+
+  async function handleAvatarUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('avatar', file);
     try {
-      await api.put(`/employees/${targetId}`, updates);
+      await api.put(`/employees/${targetId}/avatar`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       fetchProfile();
     } catch {}
   }
@@ -224,9 +236,23 @@ export default function Profile() {
     <Box>
       <Paper sx={{ p: 3, mb: 2 }}>
         <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-          <Avatar sx={{ width: 80, height: 80, bgcolor: '#714B67', fontSize: 28 }}>
-            {data.first_name?.[0]}{data.last_name?.[0]}
-          </Avatar>
+          <Box sx={{ position: 'relative' }}>
+            <Avatar
+              src={data.profile_picture ? `http://localhost:3000${data.profile_picture}` : undefined}
+              sx={{ width: 80, height: 80, bgcolor: 'primary.main', fontSize: 28 }}
+            >
+              {data.first_name?.[0]}{data.last_name?.[0]}
+            </Avatar>
+            {editable && (
+              <IconButton
+                component="label" size="small"
+                sx={{ position: 'absolute', bottom: -4, right: -4, bgcolor: 'background.paper', border: '2px solid', borderColor: 'divider', '&:hover': { bgcolor: 'action.hover' } }}
+              >
+                <CameraAlt sx={{ fontSize: 14 }} />
+                <input type="file" hidden accept="image/*" onChange={handleAvatarUpload} />
+              </IconButton>
+            )}
+          </Box>
           <Box sx={{ flex: 1 }}>
             <Typography variant="h5" fontWeight={700}>{data.first_name} {data.last_name}</Typography>
             <Grid container spacing={2} sx={{ mt: 0.5 }}>
@@ -240,6 +266,7 @@ export default function Profile() {
             <Grid container spacing={1}>
               <Grid size={12}><Typography variant="caption">Company</Typography><Typography variant="body2">{data.company || '-'}</Typography></Grid>
               <Grid size={12}><Typography variant="caption">Department</Typography><Typography variant="body2">{data.department || '-'}</Typography></Grid>
+              <Grid size={12}><Typography variant="caption">Manager</Typography><Typography variant="body2">{data.manager_name || '-'}</Typography></Grid>
               <Grid size={12}><Typography variant="caption">Location</Typography><Typography variant="body2">{data.location || '-'}</Typography></Grid>
             </Grid>
           </Box>
@@ -256,7 +283,7 @@ export default function Profile() {
       </Paper>
 
       <Paper sx={{ p: 3, mt: 1 }}>
-        {tab === 0 && <ResumeTab data={data} editable={editable} onSave={handleSave} />}
+        {tab === 0 && <ResumeTab data={data} editable={editable} onSave={handleSave} onRefresh={fetchProfile} />}
         {tab === 1 && <PrivateInfoTab data={data} editable={editable} onSave={handleSave} />}
         {tab === 2 && showSalary && <SalaryInfoTab employeeId={targetId} />}
         {tab === (showSalary ? 3 : 2) && isOwnProfile && <SecurityTab />}

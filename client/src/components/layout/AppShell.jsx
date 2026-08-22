@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Outlet, Navigate, useLocation } from 'react-router-dom';
-import { Box, Typography, Button, IconButton, Avatar, Menu, MenuItem, Tooltip } from '@mui/material';
-import { Circle } from '@mui/icons-material';
+import { Outlet, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Box, Typography, Button, IconButton, Avatar, Menu, MenuItem, Chip } from '@mui/material';
+import { Circle, CheckCircle } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar, { SIDEBAR_WIDTH } from '../../design/components/Sidebar';
 import { useAuth } from '../../context/AuthContext';
@@ -10,9 +10,11 @@ import { colors } from '../../design/tokens';
 import api from '../../services/api';
 
 export default function AppShell() {
-  const { user, employee, loading } = useAuth();
+  const { user, employee, loading, logout } = useAuth();
   const location = useLocation();
-  const [attendanceStatus, setAttendanceStatus] = useState({ checked_in: false });
+  const navigate = useNavigate();
+  const [attendanceStatus, setAttendanceStatus] = useState({ checked_in: false, completed: false });
+  const [anchorEl, setAnchorEl] = useState(null);
 
   useEffect(() => {
     if (user) fetchStatus();
@@ -71,6 +73,7 @@ export default function AppShell() {
             alignItems: 'center',
             justifyContent: 'flex-end',
             px: 3,
+            gap: 2,
             borderBottom: '1px solid',
             borderColor: 'divider',
             bgcolor: 'rgba(255,255,255,0.8)',
@@ -80,7 +83,16 @@ export default function AppShell() {
             zIndex: 1100,
           }}
         >
-          {!attendanceStatus.checked_in ? (
+          {/* Check-in/out control */}
+          {attendanceStatus.completed ? (
+            <Chip
+              icon={<CheckCircle sx={{ fontSize: 16 }} />}
+              label={`Done (${attendanceStatus.check_in} - ${attendanceStatus.check_out})`}
+              color="success"
+              variant="outlined"
+              size="small"
+            />
+          ) : !attendanceStatus.checked_in ? (
             <Button variant="outlined" onClick={handleCheckIn} size="small" sx={{ borderRadius: 2 }}>
               Check In →
             </Button>
@@ -94,9 +106,24 @@ export default function AppShell() {
               </Button>
             </Box>
           )}
+
           <Circle
-            sx={{ color: attendanceStatus.checked_in ? colors.success.main : colors.error.main, fontSize: 12, ml: 2 }}
+            sx={{
+              color: attendanceStatus.checked_in ? colors.success.main : attendanceStatus.completed ? colors.success.main : colors.error.main,
+              fontSize: 12
+            }}
           />
+
+          {/* Avatar dropdown */}
+          <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} size="small">
+            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: '0.75rem' }}>
+              {employee?.first_name?.[0]}{employee?.last_name?.[0]}
+            </Avatar>
+          </IconButton>
+          <Menu anchorEl={anchorEl} open={!!anchorEl} onClose={() => setAnchorEl(null)}>
+            <MenuItem onClick={() => { setAnchorEl(null); navigate('/profile'); }}>My Profile</MenuItem>
+            <MenuItem onClick={() => { setAnchorEl(null); logout(); navigate('/signin'); }}>Log Out</MenuItem>
+          </Menu>
         </Box>
 
         {/* Content */}

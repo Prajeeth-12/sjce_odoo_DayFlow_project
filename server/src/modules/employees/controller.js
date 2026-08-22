@@ -171,6 +171,35 @@ function update(req, res) {
   res.json(updated);
 }
 
+function uploadAvatar(req, res) {
+  const { id } = req.params;
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+  const avatarPath = `/uploads/${req.file.filename}`;
+  runQuery('UPDATE employees SET profile_picture = ?, updated_at = datetime("now") WHERE id = ?', [avatarPath, parseInt(id)]);
+  res.json({ profile_picture: avatarPath });
+}
+
+function addSkill(req, res) {
+  const { id } = req.params;
+  const { skill_name, proficiency } = req.body;
+  if (!skill_name) return res.status(400).json({ error: 'Skill name required' });
+
+  runQuery('INSERT INTO skills (employee_id, skill_name, proficiency) VALUES (?, ?, ?)',
+    [parseInt(id), skill_name, proficiency || null]);
+  res.status(201).json({ message: 'Skill added' });
+}
+
+function addCertification(req, res) {
+  const { id } = req.params;
+  const { name, issuer, date } = req.body;
+  if (!name) return res.status(400).json({ error: 'Certification name required' });
+
+  runQuery('INSERT INTO certifications (employee_id, name, issuer, date) VALUES (?, ?, ?, ?)',
+    [parseInt(id), name, issuer || null, date || null]);
+  res.status(201).json({ message: 'Certification added' });
+}
+
 function remove(req, res) {
   const { id } = req.params;
   const employee = getOne('SELECT user_id FROM employees WHERE id = ?', [parseInt(id)]);
@@ -182,4 +211,4 @@ function remove(req, res) {
   res.json({ message: 'Employee deactivated' });
 }
 
-module.exports = { list, search, getById, create, update, remove };
+module.exports = { list, search, getById, create, update, uploadAvatar, addSkill, addCertification, remove };

@@ -11,8 +11,12 @@ function checkIn(req, res) {
     [employee.id, today]
   );
 
-  if (existing && existing.check_in) {
+  if (existing && existing.check_in && !existing.check_out) {
     return res.status(400).json({ error: 'Already checked in today' });
+  }
+
+  if (existing && existing.check_out) {
+    return res.status(400).json({ error: 'Already completed attendance for today' });
   }
 
   const now = new Date().toTimeString().slice(0, 5);
@@ -147,7 +151,7 @@ function getSummary(req, res) {
 function getStatus(req, res) {
   const userId = req.user.id;
   const employee = getOne('SELECT id FROM employees WHERE user_id = ?', [userId]);
-  if (!employee) return res.json({ checked_in: false });
+  if (!employee) return res.json({ checked_in: false, completed: false });
 
   const today = new Date().toISOString().split('T')[0];
   const record = getOne(
@@ -157,6 +161,7 @@ function getStatus(req, res) {
 
   res.json({
     checked_in: !!(record && record.check_in && !record.check_out),
+    completed: !!(record && record.check_in && record.check_out),
     check_in: record?.check_in || null,
     check_out: record?.check_out || null
   });

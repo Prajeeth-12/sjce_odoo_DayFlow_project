@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import {
   Box, Paper, Typography, Button, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Dialog, DialogTitle, DialogContent,
-  DialogActions, TextField, MenuItem, IconButton, Grid, LinearProgress
+  DialogActions, TextField, MenuItem, IconButton, Grid, LinearProgress, Chip
 } from '@mui/material';
-import { Add, Close, Check } from '@mui/icons-material';
+import { Add, Close, Check, AttachFile } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
@@ -12,6 +12,7 @@ import PageHeader from '../../design/components/PageHeader';
 import StatusBadge from '../../design/components/StatusBadge';
 import EmptyState from '../../design/components/EmptyState';
 import { staggerContainer, staggerItem } from '../../design/animations';
+import { colors } from '../../design/tokens';
 
 function LeaveBalanceCards({ types }) {
   return (
@@ -48,6 +49,97 @@ function LeaveBalanceCards({ types }) {
   );
 }
 
+function MiniCalendar({ year, leaveRequests, publicHolidays }) {
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function getDaysInMonth(month) {
+    return new Date(year, month + 1, 0).getDate();
+  }
+
+  function getFirstDay(month) {
+    return new Date(year, month, 1).getDay();
+  }
+
+  function getDayStatus(dateStr) {
+    for (const req of leaveRequests) {
+      if (dateStr >= req.start_date && dateStr <= req.end_date) {
+        return req.status;
+      }
+    }
+    for (const h of publicHolidays) {
+      if (h.date === dateStr) return 'holiday';
+    }
+    return null;
+  }
+
+  const statusColors = {
+    approved: colors.success.main,
+    pending: colors.warning.main,
+    rejected: colors.error.main,
+    holiday: colors.info.main,
+  };
+
+  return (
+    <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="subtitle2">Calendar {year}</Typography>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: colors.success.main }} /><Typography variant="caption">Approved</Typography></Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: colors.warning.main }} /><Typography variant="caption">Pending</Typography></Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: colors.error.main }} /><Typography variant="caption">Rejected</Typography></Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: colors.info.main }} /><Typography variant="caption">Holiday</Typography></Box>
+        </Box>
+      </Box>
+      <Grid container spacing={1}>
+        {months.map((monthName, monthIdx) => (
+          <Grid size={{ xs: 6, sm: 4, md: 3 }} key={monthIdx}>
+            <Typography variant="caption" fontWeight={600} sx={{ mb: 0.5, display: 'block' }}>{monthName}</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '1px' }}>
+              {['S','M','T','W','T','F','S'].map((d,i) => (
+                <Typography key={i} variant="caption" sx={{ fontSize: '0.6rem', textAlign: 'center', color: 'text.secondary' }}>{d}</Typography>
+              ))}
+              {Array.from({ length: getFirstDay(monthIdx) }).map((_, i) => <Box key={`e-${i}`} />)}
+              {Array.from({ length: getDaysInMonth(monthIdx) }).map((_, day) => {
+                const dateStr = `${year}-${String(monthIdx + 1).padStart(2, '0')}-${String(day + 1).padStart(2, '0')}`;
+                const status = getDayStatus(dateStr);
+                return (
+                  <Box
+                    key={day}
+                    sx={{
+                      width: 16, height: 16, borderRadius: '50%', display: 'flex',
+                      alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem',
+                      bgcolor: status ? statusColors[status] : 'transparent',
+                      color: status ? '#fff' : 'text.primary',
+                      mx: 'auto',
+                    }}
+                  >
+                    {day + 1}
+                  </Box>
+                );
+              })}
+            </Box>
+          </Grid>
+        ))}
+      </Grid>
+    </Paper>
+  );
+}
+
+function PublicHolidaysSidebar({ holidays }) {
+  if (!holidays || holidays.length === 0) return null;
+  return (
+    <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+      <Typography variant="subtitle2" sx={{ mb: 1 }}>Public Holidays</Typography>
+      {holidays.map((h, i) => (
+        <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5 }}>
+          <Typography variant="caption">{h.name}</Typography>
+          <Typography variant="caption" color="text.secondary">{h.date}</Typography>
+        </Box>
+      ))}
+    </Paper>
+  );
+}
+
 function RequestDialog({ open, onClose, types, onSubmit }) {
   const [form, setForm] = useState({ leave_type_id: '', start_date: '', end_date: '', remarks: '' });
 
@@ -56,6 +148,10 @@ function RequestDialog({ open, onClose, types, onSubmit }) {
     onClose();
     setForm({ leave_type_id: '', start_date: '', end_date: '', remarks: '' });
   }
+
+  const days = form.start_date && form.end_date
+    ? Math.max(1, Math.ceil((new Date(form.end_date) - new Date(form.start_date)) / (1000*60*60*24)) + 1)
+    : 0;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -72,12 +168,17 @@ function RequestDialog({ open, onClose, types, onSubmit }) {
             <TextField fullWidth label="To" type="date" value={form.end_date} onChange={e => setForm({ ...form, end_date: e.target.value })} slotProps={{ inputLabel: { shrink: true } }} />
           </Grid>
         </Grid>
+        {days > 0 && (
+          <Typography variant="body2" color="primary" sx={{ mt: 1 }}>
+            Allocation: {days} day{days > 1 ? 's' : ''}
+          </Typography>
+        )}
         <TextField fullWidth label="Remarks (optional)" value={form.remarks} onChange={e => setForm({ ...form, remarks: e.target.value })} margin="normal" multiline rows={2} />
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} color="inherit">Cancel</Button>
+        <Button onClick={onClose} color="inherit">Discard</Button>
         <Button variant="contained" onClick={handleSubmit} disabled={!form.leave_type_id || !form.start_date || !form.end_date}>
-          Submit Request
+          Submit
         </Button>
       </DialogActions>
     </Dialog>
@@ -87,15 +188,21 @@ function RequestDialog({ open, onClose, types, onSubmit }) {
 function EmployeeTimeOff() {
   const [types, setTypes] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [calendar, setCalendar] = useState({ requests: [], public_holidays: [] });
   const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => { fetchData(); }, []);
 
   async function fetchData() {
     try {
-      const [t, r] = await Promise.all([api.get('/leave/types'), api.get('/leave/my')]);
+      const [t, r, c] = await Promise.all([
+        api.get('/leave/types'),
+        api.get('/leave/my'),
+        api.get(`/leave/calendar?year=${new Date().getFullYear()}`)
+      ]);
       setTypes(t.data);
       setRequests(r.data);
+      setCalendar(c.data);
     } catch {}
   }
 
@@ -112,6 +219,19 @@ function EmployeeTimeOff() {
       />
 
       <LeaveBalanceCards types={types} />
+
+      <Grid container spacing={2}>
+        <Grid size={{ xs: 12, md: 9 }}>
+          <MiniCalendar
+            year={new Date().getFullYear()}
+            leaveRequests={calendar.requests}
+            publicHolidays={calendar.public_holidays}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 3 }}>
+          <PublicHolidaysSidebar holidays={calendar.public_holidays} />
+        </Grid>
+      </Grid>
 
       <TableContainer component={Paper} variant="outlined">
         <Table size="small">
