@@ -57,6 +57,7 @@ export default function SignUp() {
       >
         <Paper sx={{ p: 5, width: 460, maxWidth: '90vw' }}>
           <Box sx={{ textAlign: 'center', mb: 3 }}>
+            <Box component="img" src="/logo.png" sx={{ height: 56, mb: 1 }} />
             <Typography variant="h4" sx={{ color: 'primary.main', mb: 0.5 }}>
               Dayflow
             </Typography>

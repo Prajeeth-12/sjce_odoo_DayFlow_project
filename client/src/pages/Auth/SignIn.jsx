@@ -57,6 +57,7 @@ export default function SignIn() {
       >
         <Paper sx={{ p: 5, width: 420, maxWidth: '90vw', position: 'relative' }}>
           <Box sx={{ textAlign: 'center', mb: 4 }}>
+            <Box component="img" src="/logo.png" sx={{ height: 56, mb: 1 }} />
             <Typography variant="h4" sx={{ color: 'primary.main', mb: 0.5 }}>
               Dayflow
             </Typography>

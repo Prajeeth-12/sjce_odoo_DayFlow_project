@@ -51,14 +51,14 @@ export default function Sidebar() {
     >
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 64 }}>
         {!collapsed && (
-          <Typography
-            variant="h6"
-            onClick={() => navigate('/dashboard')}
-            sx={{ fontWeight: 700, color: 'primary.main', whiteSpace: 'nowrap', cursor: 'pointer' }}
-          >
-            Dayflow
-          </Typography>
+          <Box onClick={() => navigate('/dashboard')} sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
+            <Box component="img" src="/logo.png" sx={{ height: 32 }} />
+            <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main', whiteSpace: 'nowrap' }}>
+              Dayflow
+            </Typography>
+          </Box>
         )}
+        {collapsed && <Box component="img" src="/logo.png" sx={{ height: 28, mx: 'auto' }} onClick={() => navigate('/dashboard')} />}
         <IconButton onClick={() => setCollapsed(!collapsed)} size="small">
           {collapsed ? <Menu fontSize="small" /> : <ChevronLeft fontSize="small" />}
         </IconButton>
