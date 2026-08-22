@@ -8,7 +8,7 @@ function list(req, res) {
     SELECT e.*, u.login_id, u.role
     FROM employees e
     JOIN users u ON e.user_id = u.id
-    WHERE u.is_active = 1
+    WHERE u.is_active = 1 AND u.role = 'employee'
     ORDER BY e.first_name
   `);
 
