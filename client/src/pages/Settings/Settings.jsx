@@ -53,7 +53,7 @@ export default function Settings() {
             sx={{ flex: 1 }}
           />
           <TextField
-            label="Break Time (hours)" type="number" inputProps={{ step: 0.5 }}
+            label="Break Time (hours)" type="number" slotProps={{ htmlInput: { step: 0.5 } }}
             value={settings.break_time_hours}
             onChange={e => setSettings({ ...settings, break_time_hours: parseFloat(e.target.value) })}
             sx={{ flex: 1 }}

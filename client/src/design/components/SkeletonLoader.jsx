@@ -4,7 +4,7 @@ export function CardSkeleton({ count = 8 }) {
   return (
     <Grid container spacing={2}>
       {Array.from({ length: count }).map((_, i) => (
-        <Grid item xs={12} sm={6} md={4} lg={3} key={i}>
+        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={i}>
           <Box sx={{ p: 2, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
               <Skeleton variant="circular" width={48} height={48} />
@@ -38,7 +38,7 @@ export function StatCardSkeleton({ count = 4 }) {
   return (
     <Grid container spacing={2} sx={{ mb: 3 }}>
       {Array.from({ length: count }).map((_, i) => (
-        <Grid item xs={6} md={3} key={i}>
+        <Grid size={{ xs: 6, md: 3 }} key={i}>
           <Box sx={{ p: 2.5, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
             <Skeleton width="50%" height={14} />
             <Skeleton width="30%" height={32} sx={{ mt: 1 }} />

@@ -73,16 +73,16 @@ export default function Dashboard() {
       {loading ? <StatCardSkeleton /> : (
         <motion.div variants={staggerContainer} initial="initial" animate="animate">
           <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={6} md={3}>
+            <Grid size={{ xs: 6, md: 3 }}>
               <StatCard title="Total" value={employees.length} icon={<PeopleOutlined />} color="primary" />
             </Grid>
-            <Grid item xs={6} md={3}>
+            <Grid size={{ xs: 6, md: 3 }}>
               <StatCard title="Present" value={present} icon={<CheckCircleOutlined />} color="success" />
             </Grid>
-            <Grid item xs={6} md={3}>
+            <Grid size={{ xs: 6, md: 3 }}>
               <StatCard title="On Leave" value={onLeave} icon={<FlightTakeoff />} color="info" />
             </Grid>
-            <Grid item xs={6} md={3}>
+            <Grid size={{ xs: 6, md: 3 }}>
               <StatCard title="Absent" value={absent} icon={<WarningAmber />} color="warning" />
             </Grid>
           </Grid>
@@ -96,7 +96,7 @@ export default function Dashboard() {
           placeholder="Search employees..."
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
-          InputProps={{ startAdornment: <InputAdornment position="start"><Search sx={{ color: 'text.secondary' }} /></InputAdornment> }}
+          slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search sx={{ color: 'text.secondary' }} /></InputAdornment> } }}
           sx={{ width: 320 }}
         />
       </Box>
@@ -112,7 +112,7 @@ export default function Dashboard() {
         <motion.div variants={staggerContainer} initial="initial" animate="animate">
           <Grid container spacing={2}>
             {employees.map(emp => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={emp.id}>
+              <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={emp.id}>
                 <motion.div variants={staggerItem}>
                   <Card sx={{ '&:hover': { transform: 'translateY(-3px)' } }}>
                     <CardActionArea onClick={() => navigate(`/employees/${emp.id}`)}>

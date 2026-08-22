@@ -18,7 +18,7 @@ function LeaveBalanceCards({ types }) {
     <motion.div variants={staggerContainer} initial="initial" animate="animate">
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {types.map(t => (
-          <Grid item xs={12} sm={6} md={4} key={t.id}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={t.id}>
             <motion.div variants={staggerItem}>
               <Paper variant="outlined" sx={{ p: 2.5 }}>
                 <Typography variant="caption" color="text.secondary" fontWeight={500}>
@@ -65,11 +65,11 @@ function RequestDialog({ open, onClose, types, onSubmit }) {
           {types.map(t => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}
         </TextField>
         <Grid container spacing={2} sx={{ mt: 0.5 }}>
-          <Grid item xs={6}>
-            <TextField fullWidth label="From" type="date" value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })} InputLabelProps={{ shrink: true }} />
+          <Grid size={6}>
+            <TextField fullWidth label="From" type="date" value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })} slotProps={{ inputLabel: { shrink: true } }} />
           </Grid>
-          <Grid item xs={6}>
-            <TextField fullWidth label="To" type="date" value={form.end_date} onChange={e => setForm({ ...form, end_date: e.target.value })} InputLabelProps={{ shrink: true }} />
+          <Grid size={6}>
+            <TextField fullWidth label="To" type="date" value={form.end_date} onChange={e => setForm({ ...form, end_date: e.target.value })} slotProps={{ inputLabel: { shrink: true } }} />
           </Grid>
         </Grid>
         <TextField fullWidth label="Remarks (optional)" value={form.remarks} onChange={e => setForm({ ...form, remarks: e.target.value })} margin="normal" multiline rows={2} />

@@ -88,10 +88,12 @@ export default function Sidebar() {
                     {!collapsed && (
                       <ListItemText
                         primary={item.label}
-                        primaryTypographyProps={{
-                          fontSize: '0.875rem',
-                          fontWeight: active ? 600 : 400,
-                          color: active ? 'primary.main' : 'text.primary',
+                        slotProps={{
+                          primary: {
+                            fontSize: '0.875rem',
+                            fontWeight: active ? 600 : 400,
+                            color: active ? 'primary.main' : 'text.primary',
+                          }
                         }}
                       />
                     )}

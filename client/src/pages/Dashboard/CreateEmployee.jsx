@@ -60,7 +60,7 @@ export default function CreateEmployee() {
             <TextField fullWidth label="Department" value={form.department} onChange={handleChange('department')} margin="dense" />
             <TextField fullWidth label="Job Position" value={form.job_position} onChange={handleChange('job_position')} margin="dense" />
             <TextField fullWidth label="Location" value={form.location} onChange={handleChange('location')} margin="dense" />
-            <TextField fullWidth label="Date of Joining" type="date" value={form.date_of_joining} onChange={handleChange('date_of_joining')} margin="dense" InputLabelProps={{ shrink: true }} />
+            <TextField fullWidth label="Date of Joining" type="date" value={form.date_of_joining} onChange={handleChange('date_of_joining')} margin="dense" slotProps={{ inputLabel: { shrink: true } }} />
           </Grid>
           <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
             <Button type="submit" variant="contained" sx={{ bgcolor: '#714B67' }}>Create Employee</Button>

@@ -51,13 +51,13 @@ function EmployeeView() {
 
       <motion.div variants={staggerContainer} initial="initial" animate="animate">
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={4}>
+          <Grid size={4}>
             <StatCard title="Days Present" value={summary.days_present || 0} color="success" />
           </Grid>
-          <Grid item xs={4}>
+          <Grid size={4}>
             <StatCard title="Leaves" value={summary.leaves_count || 0} color="info" />
           </Grid>
-          <Grid item xs={4}>
+          <Grid size={4}>
             <StatCard title="Working Days" value={summary.total_working_days || 0} color="primary" />
           </Grid>
         </Grid>
