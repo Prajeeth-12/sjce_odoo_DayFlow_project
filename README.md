@@ -4,6 +4,32 @@
 
 A full-stack HRMS built with Node.js, Express, React, and Material UI. Manages employee onboarding, attendance tracking, leave management, and Indian payroll computation.
 
+## Screenshots
+
+### Admin View
+
+**Employee Dashboard** — stat cards, employee grid with live status indicators, search
+![Admin Dashboard](web_site_images/Screenshot%202026-08-22%20210803.png)
+
+**Admin Profile** — full access with Resume, Private Info, Salary Info, Security tabs
+![Admin Profile](web_site_images/Screenshot%202026-08-22%20210814.png)
+
+**Attendance (Admin)** — view all employees' check-in/out for any date
+![Admin Attendance](web_site_images/Screenshot%202026-08-22%20210851.png)
+
+**Time Off (Admin)** — leave balances, approve/reject pending requests
+![Admin Time Off](web_site_images/Screenshot%202026-08-22%20210842.png)
+
+### Employee View
+
+**Time Off (Employee)** — 12-month calendar with color-coded leave days, public holidays sidebar
+![Employee Time Off](web_site_images/Screenshot%202026-08-22%20210926.png)
+
+**Employee Profile** — own profile with Resume, Private Info, Security tabs (no Salary tab)
+![Employee Profile](web_site_images/Screenshot%202026-08-22%20210949.png)
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -17,9 +43,10 @@ A full-stack HRMS built with Node.js, Express, React, and Material UI. Manages e
 
 - **Authentication** — Admin signup, employee login with auto-generated IDs (format: `OIJODO20220001`)
 - **Employee Management** — CRUD, profile with 4 tabs (Resume, Private Info, Salary, Security)
-- **Attendance** — Real-time check-in/out, daily & monthly views, work hours computation
-- **Leave Management** — Request/approve/reject workflow, balance tracking, 3 leave types
+- **Attendance** — Check-in/out with break tracking, confirm & lock, daily & monthly views
+- **Leave Management** — Request/approve/reject workflow, 12-month calendar, balance tracking
 - **Payroll** — Indian salary structure: Basic, HRA, LTA, PF (12%+12%), Professional Tax
+- **Role-Based Access** — Employees see limited info about others; admins see everything
 - **Premium UI** — Sidebar navigation, animated cards, skeleton loaders, page transitions
 
 ## Project Structure
@@ -38,6 +65,8 @@ A full-stack HRMS built with Node.js, Express, React, and Material UI. Manages e
 │       ├── middleware/      # JWT auth guard, role guard
 │       ├── database/        # Schema, db layer (sql.js)
 │       └── utils/           # Login ID generator, password generator
+├── web_site_images/         # Application screenshots
+├── exccalidraw_diagrams/    # UI wireframe screenshots
 ├── package.json             # Root (concurrently runs both)
 └── odoo.db                  # SQLite database (auto-created on first run)
 ```
@@ -75,10 +104,23 @@ npm run dev
 |--------|--------|
 | Auth | `POST /api/auth/signup`, `/signin`, `/refresh`, `/change-password`, `GET /me` |
 | Employees | `GET/POST /api/employees`, `GET/PUT/DELETE /:id`, `/search` |
-| Attendance | `POST /check-in`, `/check-out`, `GET /my`, `/all`, `/summary`, `/status` |
+| Attendance | `POST /check-in`, `/check-out`, `/break/start`, `/break/end`, `/confirm`, `/resume` |
 | Leave | `GET /types`, `POST /request`, `GET /my`, `/all`, `PUT /:id/approve`, `/:id/reject` |
 | Payroll | `GET/PUT /api/payroll/:employee_id`, `GET /:employee_id/compute` |
 | Settings | `GET/PUT /api/settings`, `POST /logo` |
+
+## Attendance Flow
+
+```
+Check In → Break → Resume → End Day → Continue Working / Confirm & Lock
+```
+
+- **Check In** — starts the timer
+- **Break** — pauses (tracks total break duration)
+- **Resume** — back to working after break
+- **End Day** — calculates work hours (total time minus breaks)
+- **Continue Working** — not done yet, go back
+- **Confirm & Lock** — finalizes attendance for the day
 
 ## Salary Computation (Indian Payroll)
 
