@@ -63,12 +63,31 @@ function getById(req, res) {
     return res.status(404).json({ error: 'Employee not found' });
   }
 
+  const isOwner = employee.user_id === req.user.id;
+  const isAdmin = req.user.role === 'admin';
+
+  if (!isOwner && !isAdmin) {
+    return res.json({
+      id: employee.id,
+      first_name: employee.first_name,
+      last_name: employee.last_name,
+      email: employee.email,
+      department: employee.department,
+      job_position: employee.job_position,
+      company: employee.company,
+      location: employee.location,
+      profile_picture: employee.profile_picture,
+      login_id: employee.login_id,
+      view_only: true
+    });
+  }
+
   const bankDetails = getOne('SELECT * FROM bank_details WHERE employee_id = ?', [parseInt(id)]);
   const skills = getAll('SELECT * FROM skills WHERE employee_id = ?', [parseInt(id)]);
   const certifications = getAll('SELECT * FROM certifications WHERE employee_id = ?', [parseInt(id)]);
-  const salary = getOne('SELECT * FROM salary_structures WHERE employee_id = ?', [parseInt(id)]);
+  const salary = isAdmin ? getOne('SELECT * FROM salary_structures WHERE employee_id = ?', [parseInt(id)]) : null;
 
-  res.json({ ...employee, bank_details: bankDetails, skills, certifications, salary });
+  res.json({ ...employee, bank_details: bankDetails, skills, certifications, salary, view_only: false });
 }
 
 async function create(req, res) {

@@ -229,8 +229,10 @@ export default function Profile() {
 
   if (!data) return null;
 
-  const editable = isOwnProfile || isAdmin;
-  const showSalary = isAdmin;
+  const viewOnly = data.view_only;
+  const editable = !viewOnly && (isOwnProfile || isAdmin);
+  const showSalary = isAdmin && !viewOnly;
+  const showTabs = !viewOnly;
 
   return (
     <Box>
@@ -256,9 +258,9 @@ export default function Profile() {
           <Box sx={{ flex: 1 }}>
             <Typography variant="h5" fontWeight={700}>{data.first_name} {data.last_name}</Typography>
             <Grid container spacing={2} sx={{ mt: 0.5 }}>
-              <Grid size={{ xs: 6, md: 3 }}><Typography variant="caption">Login ID</Typography><Typography variant="body2">{data.login_id}</Typography></Grid>
+              {data.login_id && <Grid size={{ xs: 6, md: 3 }}><Typography variant="caption">Login ID</Typography><Typography variant="body2">{data.login_id}</Typography></Grid>}
               <Grid size={{ xs: 6, md: 3 }}><Typography variant="caption">Email</Typography><Typography variant="body2">{data.email}</Typography></Grid>
-              <Grid size={{ xs: 6, md: 3 }}><Typography variant="caption">Mobile</Typography><Typography variant="body2">{data.mobile || '-'}</Typography></Grid>
+              {data.mobile && <Grid size={{ xs: 6, md: 3 }}><Typography variant="caption">Mobile</Typography><Typography variant="body2">{data.mobile}</Typography></Grid>}
               <Grid size={{ xs: 6, md: 3 }}><Typography variant="caption">Job Position</Typography><Typography variant="body2">{data.job_position || '-'}</Typography></Grid>
             </Grid>
           </Box>
@@ -266,28 +268,40 @@ export default function Profile() {
             <Grid container spacing={1}>
               <Grid size={12}><Typography variant="caption">Company</Typography><Typography variant="body2">{data.company || '-'}</Typography></Grid>
               <Grid size={12}><Typography variant="caption">Department</Typography><Typography variant="body2">{data.department || '-'}</Typography></Grid>
-              <Grid size={12}><Typography variant="caption">Manager</Typography><Typography variant="body2">{data.manager_name || '-'}</Typography></Grid>
+              {!viewOnly && <Grid size={12}><Typography variant="caption">Manager</Typography><Typography variant="body2">{data.manager_name || '-'}</Typography></Grid>}
               <Grid size={12}><Typography variant="caption">Location</Typography><Typography variant="body2">{data.location || '-'}</Typography></Grid>
             </Grid>
           </Box>
         </Box>
       </Paper>
 
-      <Paper sx={{ px: 2 }}>
-        <Tabs value={tab} onChange={(_, v) => setTab(v)}>
-          <Tab label="Resume" />
-          <Tab label="Private Info" />
-          {showSalary && <Tab label="Salary Info" />}
-          {isOwnProfile && <Tab label="Security" />}
-        </Tabs>
-      </Paper>
+      {viewOnly && (
+        <Paper sx={{ p: 3, mt: 1 }}>
+          <Typography variant="body2" color="text.secondary">
+            You are viewing this profile in read-only mode. Only basic information is shown.
+          </Typography>
+        </Paper>
+      )}
 
-      <Paper sx={{ p: 3, mt: 1 }}>
-        {tab === 0 && <ResumeTab data={data} editable={editable} onSave={handleSave} onRefresh={fetchProfile} />}
-        {tab === 1 && <PrivateInfoTab data={data} editable={editable} onSave={handleSave} />}
-        {tab === 2 && showSalary && <SalaryInfoTab employeeId={targetId} />}
-        {tab === (showSalary ? 3 : 2) && isOwnProfile && <SecurityTab />}
-      </Paper>
+      {showTabs && (
+        <>
+          <Paper sx={{ px: 2 }}>
+            <Tabs value={tab} onChange={(_, v) => setTab(v)}>
+              <Tab label="Resume" />
+              <Tab label="Private Info" />
+              {showSalary && <Tab label="Salary Info" />}
+              {isOwnProfile && <Tab label="Security" />}
+            </Tabs>
+          </Paper>
+
+          <Paper sx={{ p: 3, mt: 1 }}>
+            {tab === 0 && <ResumeTab data={data} editable={editable} onSave={handleSave} onRefresh={fetchProfile} />}
+            {tab === 1 && <PrivateInfoTab data={data} editable={editable} onSave={handleSave} />}
+            {tab === 2 && showSalary && <SalaryInfoTab employeeId={targetId} />}
+            {tab === (showSalary ? 3 : 2) && isOwnProfile && <SecurityTab />}
+          </Paper>
+        </>
+      )}
     </Box>
   );
 }
