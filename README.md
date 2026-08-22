@@ -51,7 +51,10 @@ cd server && npm install
 cd ../client && npm install
 cd ..
 
-# Run both servers
+# Set up environment (copy and edit if needed)
+cp server/.env.example server/.env
+
+# Run both servers (database auto-creates on first run)
 npm run dev
 ```
 
