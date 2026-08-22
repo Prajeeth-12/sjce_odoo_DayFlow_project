@@ -9,7 +9,7 @@ router.post('/check-out', authGuard, controller.checkOut);
 router.post('/break/start', authGuard, controller.startBreak);
 router.post('/break/end', authGuard, controller.endBreak);
 router.post('/confirm', authGuard, controller.confirmAttendance);
-router.post('/reset', authGuard, controller.resetAttendance);
+router.post('/resume', authGuard, controller.resumeWork);
 router.get('/status', authGuard, controller.getStatus);
 router.get('/my', authGuard, controller.getMyAttendance);
 router.get('/all', authGuard, roleGuard(['admin']), controller.getAllAttendance);

@@ -107,22 +107,17 @@ function confirmAttendance(req, res) {
   res.json({ message: 'Attendance confirmed' });
 }
 
-function resetAttendance(req, res) {
+function resumeWork(req, res) {
   const empId = getEmployeeId(req.user.id);
   if (!empId) return res.status(404).json({ error: 'Employee not found' });
 
-  const { mode } = req.body;
   const record = getTodayRecord(empId);
   if (!record) return res.status(400).json({ error: 'No record today' });
-  if (record.status === 'confirmed') return res.status(400).json({ error: 'Cannot reset confirmed attendance' });
+  if (record.status === 'confirmed') return res.status(400).json({ error: 'Cannot modify confirmed attendance' });
+  if (!record.check_out) return res.status(400).json({ error: 'Not checked out yet' });
 
-  if (mode === 'continue') {
-    runQuery('UPDATE attendance SET check_out = NULL, work_hours = 0, extra_hours = 0, status = ? WHERE id = ?', ['present', record.id]);
-    res.json({ message: 'Resumed — check-in time kept, check out when ready' });
-  } else {
-    runQuery('UPDATE attendance SET check_in = NULL, check_out = NULL, work_hours = 0, extra_hours = 0, break_minutes = 0, break_start = NULL, status = ? WHERE id = ?', ['present', record.id]);
-    res.json({ message: 'Reset — start fresh' });
-  }
+  runQuery('UPDATE attendance SET check_out = NULL, work_hours = 0, extra_hours = 0, status = ? WHERE id = ?', ['present', record.id]);
+  res.json({ message: 'Resumed work — check out again when done' });
 }
 
 function getStatus(req, res) {
@@ -207,4 +202,4 @@ function getSummary(req, res) {
   });
 }
 
-module.exports = { checkIn, checkOut, startBreak, endBreak, confirmAttendance, resetAttendance, getMyAttendance, getAllAttendance, getSummary, getStatus };
+module.exports = { checkIn, checkOut, startBreak, endBreak, confirmAttendance, resumeWork, getMyAttendance, getAllAttendance, getSummary, getStatus };
