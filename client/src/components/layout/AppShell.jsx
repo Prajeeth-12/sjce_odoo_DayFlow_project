@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { Box, Typography, Button, IconButton, Avatar, Menu, MenuItem, Chip } from '@mui/material';
-import { Circle, CheckCircle } from '@mui/icons-material';
+import {
+  Box, Typography, Button, IconButton, Avatar, Menu, MenuItem, Chip,
+  Dialog, DialogTitle, DialogContent, DialogActions
+} from '@mui/material';
+import { Circle, CheckCircle, RestartAlt, PlayArrow, Stop } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar, { SIDEBAR_WIDTH } from '../../design/components/Sidebar';
 import { useAuth } from '../../context/AuthContext';
@@ -13,8 +16,9 @@ export default function AppShell() {
   const { user, employee, loading, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [attendanceStatus, setAttendanceStatus] = useState({ checked_in: false, completed: false });
+  const [status, setStatus] = useState({ state: 'idle' });
   const [anchorEl, setAnchorEl] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(false);
 
   useEffect(() => {
     if (user) fetchStatus();
@@ -23,7 +27,7 @@ export default function AppShell() {
   async function fetchStatus() {
     try {
       const { data } = await api.get('/attendance/status');
-      setAttendanceStatus(data);
+      setStatus(data);
     } catch {}
   }
 
@@ -45,13 +49,29 @@ export default function AppShell() {
     }
   }
 
+  async function handleConfirm() {
+    try {
+      await api.post('/attendance/confirm');
+      setConfirmDialog(false);
+      fetchStatus();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Confirm failed');
+    }
+  }
+
+  async function handleReset() {
+    try {
+      await api.post('/attendance/reset');
+      fetchStatus();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Reset failed');
+    }
+  }
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', bgcolor: colors.neutral[50] }}>
-        <Typography
-          variant="h4"
-          sx={{ color: 'primary.main', fontWeight: 700, animation: `${brandPulse} 1.5s infinite ease-in-out` }}
-        >
+        <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 700, animation: `${brandPulse} 1.5s infinite ease-in-out` }}>
           Dayflow
         </Typography>
       </Box>
@@ -59,6 +79,46 @@ export default function AppShell() {
   }
 
   if (!user) return <Navigate to="/signin" />;
+
+  function renderAttendanceControl() {
+    switch (status.state) {
+      case 'idle':
+        return (
+          <Button variant="outlined" onClick={handleCheckIn} size="small" startIcon={<PlayArrow />} sx={{ borderRadius: 2 }}>
+            Check In
+          </Button>
+        );
+      case 'checked_in':
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Chip label={`In since ${status.check_in}`} size="small" color="success" variant="outlined" />
+            <Button variant="contained" onClick={handleCheckOut} size="small" startIcon={<Stop />} sx={{ borderRadius: 2 }}>
+              Check Out
+            </Button>
+          </Box>
+        );
+      case 'checked_out':
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Chip label={`${status.check_in} — ${status.check_out} (${status.work_hours}h)`} size="small" variant="outlined" />
+            <Button variant="contained" color="success" onClick={() => setConfirmDialog(true)} size="small" sx={{ borderRadius: 2 }}>
+              Confirm
+            </Button>
+            <IconButton size="small" onClick={handleReset} title="Reset & redo" sx={{ color: 'text.secondary' }}>
+              <RestartAlt fontSize="small" />
+            </IconButton>
+          </Box>
+        );
+      case 'confirmed':
+        return (
+          <Chip icon={<CheckCircle sx={{ fontSize: 16 }} />} label={`Done (${status.check_in} — ${status.check_out})`} color="success" variant="outlined" size="small" />
+        );
+      default:
+        return null;
+    }
+  }
+
+  const dotColor = status.state === 'checked_in' || status.state === 'confirmed' ? colors.success.main : status.state === 'checked_out' ? colors.warning.main : colors.error.main;
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: colors.neutral[50] }}>
@@ -83,38 +143,9 @@ export default function AppShell() {
             zIndex: 1100,
           }}
         >
-          {/* Check-in/out control */}
-          {attendanceStatus.completed ? (
-            <Chip
-              icon={<CheckCircle sx={{ fontSize: 16 }} />}
-              label={`Done (${attendanceStatus.check_in} - ${attendanceStatus.check_out})`}
-              color="success"
-              variant="outlined"
-              size="small"
-            />
-          ) : !attendanceStatus.checked_in ? (
-            <Button variant="outlined" onClick={handleCheckIn} size="small" sx={{ borderRadius: 2 }}>
-              Check In →
-            </Button>
-          ) : (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Typography variant="caption" color="text.secondary">
-                Since {attendanceStatus.check_in}
-              </Typography>
-              <Button variant="contained" onClick={handleCheckOut} size="small" sx={{ borderRadius: 2 }}>
-                Check Out →
-              </Button>
-            </Box>
-          )}
+          {renderAttendanceControl()}
+          <Circle sx={{ color: dotColor, fontSize: 12 }} />
 
-          <Circle
-            sx={{
-              color: attendanceStatus.checked_in ? colors.success.main : attendanceStatus.completed ? colors.success.main : colors.error.main,
-              fontSize: 12
-            }}
-          />
-
-          {/* Avatar dropdown */}
           <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} size="small">
             <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: '0.75rem' }}>
               {employee?.first_name?.[0]}{employee?.last_name?.[0]}
@@ -141,6 +172,28 @@ export default function AppShell() {
           </AnimatePresence>
         </Box>
       </Box>
+
+      {/* Confirm Dialog */}
+      <Dialog open={confirmDialog} onClose={() => setConfirmDialog(false)}>
+        <DialogTitle>Confirm Attendance</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Please review your attendance for today:
+          </Typography>
+          <Box sx={{ bgcolor: 'action.hover', borderRadius: 2, p: 2 }}>
+            <Typography variant="body2"><strong>Check In:</strong> {status.check_in}</Typography>
+            <Typography variant="body2"><strong>Check Out:</strong> {status.check_out}</Typography>
+            <Typography variant="body2"><strong>Work Hours:</strong> {status.work_hours}h</Typography>
+          </Box>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+            Once confirmed, this cannot be changed. If times are wrong, click Cancel and use the reset button to redo.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDialog(false)} color="inherit">Cancel</Button>
+          <Button variant="contained" color="success" onClick={handleConfirm}>Confirm & Lock</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

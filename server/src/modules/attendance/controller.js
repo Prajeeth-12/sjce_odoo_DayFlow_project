@@ -11,12 +11,8 @@ function checkIn(req, res) {
     [employee.id, today]
   );
 
-  if (existing && existing.check_in && !existing.check_out) {
-    return res.status(400).json({ error: 'Already checked in today' });
-  }
-
-  if (existing && existing.check_out) {
-    return res.status(400).json({ error: 'Already completed attendance for today' });
+  if (existing && existing.status === 'confirmed') {
+    return res.status(400).json({ error: 'Attendance already confirmed for today' });
   }
 
   const now = new Date().toTimeString().slice(0, 5);
@@ -47,8 +43,8 @@ function checkOut(req, res) {
   if (!record || !record.check_in) {
     return res.status(400).json({ error: 'No check-in found for today' });
   }
-  if (record.check_out) {
-    return res.status(400).json({ error: 'Already checked out today' });
+  if (record.status === 'confirmed') {
+    return res.status(400).json({ error: 'Attendance already confirmed' });
   }
 
   const now = new Date().toTimeString().slice(0, 5);
@@ -70,6 +66,50 @@ function checkOut(req, res) {
   );
 
   res.json({ message: 'Checked out successfully', check_out: now, work_hours: workHours, extra_hours: extraHours });
+}
+
+function confirmAttendance(req, res) {
+  const userId = req.user.id;
+  const employee = getOne('SELECT id FROM employees WHERE user_id = ?', [userId]);
+  if (!employee) return res.status(404).json({ error: 'Employee not found' });
+
+  const today = new Date().toISOString().split('T')[0];
+  const record = getOne(
+    'SELECT * FROM attendance WHERE employee_id = ? AND date = ?',
+    [employee.id, today]
+  );
+
+  if (!record || !record.check_in || !record.check_out) {
+    return res.status(400).json({ error: 'Complete check-in and check-out first' });
+  }
+  if (record.status === 'confirmed') {
+    return res.status(400).json({ error: 'Already confirmed' });
+  }
+
+  runQuery('UPDATE attendance SET status = ? WHERE id = ?', ['confirmed', record.id]);
+  res.json({ message: 'Attendance confirmed for today' });
+}
+
+function resetAttendance(req, res) {
+  const userId = req.user.id;
+  const employee = getOne('SELECT id FROM employees WHERE user_id = ?', [userId]);
+  if (!employee) return res.status(404).json({ error: 'Employee not found' });
+
+  const today = new Date().toISOString().split('T')[0];
+  const record = getOne(
+    'SELECT * FROM attendance WHERE employee_id = ? AND date = ?',
+    [employee.id, today]
+  );
+
+  if (!record) {
+    return res.status(400).json({ error: 'No attendance record for today' });
+  }
+  if (record.status === 'confirmed') {
+    return res.status(400).json({ error: 'Cannot reset confirmed attendance' });
+  }
+
+  runQuery('UPDATE attendance SET check_in = NULL, check_out = NULL, work_hours = 0, extra_hours = 0, status = ? WHERE id = ?', ['present', record.id]);
+  res.json({ message: 'Attendance reset. You can check in again.' });
 }
 
 function getMyAttendance(req, res) {
@@ -129,7 +169,7 @@ function getSummary(req, res) {
   const endDate = `${y}-${String(m).padStart(2, '0')}-31`;
 
   const present = getOne(
-    `SELECT COUNT(*) as count FROM attendance WHERE employee_id = ? AND date BETWEEN ? AND ? AND status = 'present'`,
+    `SELECT COUNT(*) as count FROM attendance WHERE employee_id = ? AND date BETWEEN ? AND ? AND (status = 'present' OR status = 'confirmed')`,
     [empId, startDate, endDate]
   );
 
@@ -151,7 +191,7 @@ function getSummary(req, res) {
 function getStatus(req, res) {
   const userId = req.user.id;
   const employee = getOne('SELECT id FROM employees WHERE user_id = ?', [userId]);
-  if (!employee) return res.json({ checked_in: false, completed: false });
+  if (!employee) return res.json({ state: 'idle' });
 
   const today = new Date().toISOString().split('T')[0];
   const record = getOne(
@@ -159,12 +199,16 @@ function getStatus(req, res) {
     [employee.id, today]
   );
 
-  res.json({
-    checked_in: !!(record && record.check_in && !record.check_out),
-    completed: !!(record && record.check_in && record.check_out),
-    check_in: record?.check_in || null,
-    check_out: record?.check_out || null
-  });
+  if (!record || !record.check_in) {
+    return res.json({ state: 'idle', check_in: null, check_out: null });
+  }
+  if (record.status === 'confirmed') {
+    return res.json({ state: 'confirmed', check_in: record.check_in, check_out: record.check_out, work_hours: record.work_hours });
+  }
+  if (record.check_out) {
+    return res.json({ state: 'checked_out', check_in: record.check_in, check_out: record.check_out, work_hours: record.work_hours });
+  }
+  return res.json({ state: 'checked_in', check_in: record.check_in, check_out: null });
 }
 
-module.exports = { checkIn, checkOut, getMyAttendance, getAllAttendance, getSummary, getStatus };
+module.exports = { checkIn, checkOut, confirmAttendance, resetAttendance, getMyAttendance, getAllAttendance, getSummary, getStatus };
