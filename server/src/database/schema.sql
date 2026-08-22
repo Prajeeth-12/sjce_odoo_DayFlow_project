@@ -77,7 +77,9 @@ CREATE TABLE IF NOT EXISTS attendance (
     check_out TEXT,
     work_hours REAL DEFAULT 0,
     extra_hours REAL DEFAULT 0,
-    status TEXT NOT NULL CHECK(status IN ('present', 'absent', 'half-day', 'leave', 'confirmed')) DEFAULT 'present',
+    break_minutes INTEGER DEFAULT 0,
+    break_start TEXT,
+    status TEXT NOT NULL CHECK(status IN ('present', 'absent', 'half-day', 'leave', 'confirmed', 'on_break')) DEFAULT 'present',
     FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
 );
 
